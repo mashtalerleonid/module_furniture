@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>threeJS</title>
+
+        <link rel="stylesheet" href="./css/style.css" />
+
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Roboto&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <!-- Треба для локального завантаження архіву -->
+    <!-- <body style="opacity: 1"> -->
+    <body style="opacity: 0">
+        <div class="canvas__container" id="configurator-container"></div>
+
+        <div class="right-panel__container">
+            <div class="rp__nav">
+                <div class="nav__wrapper">
+                    <button class="nav__btn hidden">
+                        <svg
+                            class="nav__icon-arrow"
+                            width="13"
+                            height="15"
+                            viewBox="0 0 13 15"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <path
+                                d="M7.71246 0L8.41032 0.679673L1.94819 7H13V8H1.87968L8.4375 14.3151L7.74508 15L0.702613 8.21825L0.697857 8.2229L0 7.54323L7.71246 0Z"
+                            />
+                        </svg>
+                    </button>
+                    <div class="nav__title"></div>
+                </div>
+            </div>
+
+            <div class="dynamic__container">
+                <div class="changeSizeWr hidden" id="changeSizeWr">
+                    <div class="planerChangeSizes">
+                        <div class="changerMain" id="widthContainer">
+                            <div class="text">Width</div>
+                            <div class="changerInputs">
+                                <input class="input" id="widthInp" type="text" value="" />
+                                <div class="changerMain_bottom">
+                                    <div class="arrows">
+                                        <svg
+                                            id="widthUp"
+                                            class="arrowUp"
+                                            width="9"
+                                            height="15"
+                                            viewBox="0 0 9 15"
+                                            fill="none"
+                                        >
+                                            <path
+                                                fill-rule="evenodd"
+                                                clip-rule="evenodd"
+                                                d="M8.97282 0.679673L8.27496 0L0.5625 7.54323L1.26036 8.2229L1.26511 8.21825L8.30758 15L9 14.3151L1.96151 7.53713L8.97282 0.679673Z"
+                                                fill="#626262"
+                                            ></path>
+                                            <path
+                                                fill-rule="evenodd"
+                                                clip-rule="evenodd"
+                                                d="M8.97282 0.679673L8.27496 0L0.5625 7.54323L1.26036 8.2229L1.26511 8.21825L8.30758 15L9 14.3151L1.96151 7.53713L8.97282 0.679673Z"
+                                                fill="#626262"
+                                            ></path>
+                                        </svg>
+                                        <svg
+                                            id="widthDown"
+                                            class="arrowDown"
+                                            width="9"
+                                            height="15"
+                                            viewBox="0 0 9 15"
+                                            fill="none"
+                                        >
+                                            <path
+                                                fill-rule="evenodd"
+                                                clip-rule="evenodd"
+                                                d="M8.97282 0.679673L8.27496 0L0.5625 7.54323L1.26036 8.2229L1.26511 8.21825L8.30758 15L9 14.3151L1.96151 7.53713L8.97282 0.679673Z"
+                                                fill="#626262"
+                                            ></path>
+                                            <path
+                                                fill-rule="evenodd"
+                                                clip-rule="evenodd"
+                                                d="M8.97282 0.679673L8.27496 0L0.5625 7.54323L1.26036 8.2229L1.26511 8.21825L8.30758 15L9 14.3151L1.96151 7.53713L8.97282 0.679673Z"
+                                                fill="#626262"
+                                            ></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="changerMain" id="heightContainer">
+                            <div class="text">Height</div>
+                            <div class="changerInputs">
+                                <input class="input" id="heightInp" type="text" value="" />
+                                <div class="changerMain_bottom">
+                                    <div class="arrows">
+                                        <svg
+                                            id="heightUp"
+                                            class="arrowUp"
+                                            width="9"
+                                            height="15"
+                                            viewBox="0 0 9 15"
+                                            fill="none"
+                                        >
+                                            <path
+                                                fill-rule="evenodd"
+                                                clip-rule="evenodd"
+                                                d="M8.97282 0.679673L8.27496 0L0.5625 7.54323L1.26036 8.2229L1.26511 8.21825L8.30758 15L9 14.3151L1.96151 7.53713L8.97282 0.679673Z"
+                                                fill="#626262"
+                                            ></path>
+                                            <path
+                                                fill-rule="evenodd"
+                                                clip-rule="evenodd"
+                                                d="M8.97282 0.679673L8.27496 0L0.5625 7.54323L1.26036 8.2229L1.26511 8.21825L8.30758 15L9 14.3151L1.96151 7.53713L8.97282 0.679673Z"
+                                                fill="#626262"
+                                            ></path>
+                                        </svg>
+                                        <svg
+                                            id="heightDown"
+                                            class="arrowDown"
+                                            width="9"
+                                            height="15"
+                                            viewBox="0 0 9 15"
+                                            fill="none"
+                                        >
+                                            <path
+                                                fill-rule="evenodd"
+                                                clip-rule="evenodd"
+                                                d="M8.97282 0.679673L8.27496 0L0.5625 7.54323L1.26036 8.2229L1.26511 8.21825L8.30758 15L9 14.3151L1.96151 7.53713L8.97282 0.679673Z"
+                                                fill="#626262"
+                                            ></path>
+                                            <path
+                                                fill-rule="evenodd"
+                                                clip-rule="evenodd"
+                                                d="M8.97282 0.679673L8.27496 0L0.5625 7.54323L1.26036 8.2229L1.26511 8.21825L8.30758 15L9 14.3151L1.96151 7.53713L8.97282 0.679673Z"
+                                                fill="#626262"
+                                            ></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="changerMain" id="depthContainer">
+                            <div class="text">Depth</div>
+                            <div class="changerInputs">
+                                <input class="input" id="depthInp" type="text" value="" />
+                                <div class="changerMain_bottom">
+                                    <div class="arrows">
+                                        <svg
+                                            id="depthUp"
+                                            class="arrowUp"
+                                            width="9"
+                                            height="15"
+                                            viewBox="0 0 9 15"
+                                            fill="none"
+                                        >
+                                            <path
+                                                fill-rule="evenodd"
+                                                clip-rule="evenodd"
+                                                d="M8.97282 0.679673L8.27496 0L0.5625 7.54323L1.26036 8.2229L1.26511 8.21825L8.30758 15L9 14.3151L1.96151 7.53713L8.97282 0.679673Z"
+                                                fill="#626262"
+                                            ></path>
+                                            <path
+                                                fill-rule="evenodd"
+                                                clip-rule="evenodd"
+                                                d="M8.97282 0.679673L8.27496 0L0.5625 7.54323L1.26036 8.2229L1.26511 8.21825L8.30758 15L9 14.3151L1.96151 7.53713L8.97282 0.679673Z"
+                                                fill="#626262"
+                                            ></path>
+                                        </svg>
+                                        <svg
+                                            id="depthDown"
+                                            class="arrowDown"
+                                            width="9"
+                                            height="15"
+                                            viewBox="0 0 9 15"
+                                            fill="none"
+                                        >
+                                            <path
+                                                fill-rule="evenodd"
+                                                clip-rule="evenodd"
+                                                d="M8.97282 0.679673L8.27496 0L0.5625 7.54323L1.26036 8.2229L1.26511 8.21825L8.30758 15L9 14.3151L1.96151 7.53713L8.97282 0.679673Z"
+                                                fill="#626262"
+                                            ></path>
+                                            <path
+                                                fill-rule="evenodd"
+                                                clip-rule="evenodd"
+                                                d="M8.97282 0.679673L8.27496 0L0.5625 7.54323L1.26036 8.2229L1.26511 8.21825L8.30758 15L9 14.3151L1.96151 7.53713L8.97282 0.679673Z"
+                                                fill="#626262"
+                                            ></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="changerMain">
+                            <div class="text">Elevation</div>
+                            <div class="changerInputs">
+                                <input class="input" id="elevationInp" type="text" value="0" />
+                                <div class="changerMain_bottom">
+                                    <div class="arrows">
+                                        <svg
+                                            id="elevationUp"
+                                            class="arrowUp"
+                                            width="9"
+                                            height="15"
+                                            viewBox="0 0 9 15"
+                                            fill="none"
+                                        >
+                                            <path
+                                                fill-rule="evenodd"
+                                                clip-rule="evenodd"
+                                                d="M8.97282 0.679673L8.27496 0L0.5625 7.54323L1.26036 8.2229L1.26511 8.21825L8.30758 15L9 14.3151L1.96151 7.53713L8.97282 0.679673Z"
+                                                fill="#626262"
+                                            ></path>
+                                            <path
+                                                fill-rule="evenodd"
+                                                clip-rule="evenodd"
+                                                d="M8.97282 0.679673L8.27496 0L0.5625 7.54323L1.26036 8.2229L1.26511 8.21825L8.30758 15L9 14.3151L1.96151 7.53713L8.97282 0.679673Z"
+                                                fill="#626262"
+                                            ></path>
+                                        </svg>
+                                        <svg
+                                            id="elevationDown"
+                                            class="arrowDown"
+                                            width="9"
+                                            height="15"
+                                            viewBox="0 0 9 15"
+                                            fill="none"
+                                        >
+                                            <path
+                                                fill-rule="evenodd"
+                                                clip-rule="evenodd"
+                                                d="M8.97282 0.679673L8.27496 0L0.5625 7.54323L1.26036 8.2229L1.26511 8.21825L8.30758 15L9 14.3151L1.96151 7.53713L8.97282 0.679673Z"
+                                                fill="#626262"
+                                            ></path>
+                                            <path
+                                                fill-rule="evenodd"
+                                                clip-rule="evenodd"
+                                                d="M8.97282 0.679673L8.27496 0L0.5625 7.54323L1.26036 8.2229L1.26511 8.21825L8.30758 15L9 14.3151L1.96151 7.53713L8.97282 0.679673Z"
+                                                fill="#626262"
+                                            ></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="changeSizesLockWr">
+                            <div class="changeSizesLockLine1"></div>
+                            <div class="changeSizesLockLine2"></div>
+                            <div class="changeSizesLockLine3"></div>
+                            <div class="lock_main" id="wrapSVG">
+                                <svg class="hidden" id="lockSVG" viewBox="0 0 15 21" fill="none">
+                                    <rect y="9" width="15" height="12" rx="2" fill="#444444"></rect>
+                                    <path
+                                        fill-rule="evenodd"
+                                        clip-rule="evenodd"
+                                        d="M5.3006 5.47402L5.3006 9H2.00103V5.4898C2.00103 5.48978 2.00103 5.48981 2.00103 5.4898C2.00103 5.46359 2.00083 5.43378 2.0006 5.40073C1.99721 4.90361 1.98872 3.66059 2.58544 2.51478C2.92146 1.86955 3.46531 1.21546 4.32773 0.731498C5.19054 0.24732 6.25363 0 7.50001 0C8.74638 0 9.80947 0.24732 10.6723 0.731502C11.5347 1.21546 12.0785 1.86956 12.4146 2.51479C13.0112 3.66046 13.0028 4.90338 12.9994 5.4005C12.9992 5.43363 12.999 5.46344 12.999 5.4897V9H9.69941V5.47374C9.69942 4.93876 9.69943 4.2453 9.404 3.67801C9.27262 3.42573 9.10162 3.24215 8.87115 3.11282C8.64107 2.98371 8.23322 2.84211 7.50001 2.84211C6.7668 2.84211 6.35894 2.98371 6.12885 3.11282C5.89837 3.24216 5.72736 3.42575 5.59598 3.67802C5.30049 4.24542 5.30055 4.9391 5.3006 5.47402Z"
+                                        fill="#444444"
+                                    ></path>
+                                </svg>
+                                <svg id="unlockSVG" viewBox="0 0 15 22" fill="none">
+                                    <rect
+                                        y="10"
+                                        width="15"
+                                        height="12"
+                                        rx="2"
+                                        fill="#444444"
+                                    ></rect>
+                                    <path
+                                        fill-rule="evenodd"
+                                        clip-rule="evenodd"
+                                        d="M5.3006 5.47402L5.3006 7H2.00103V5.4898C2.00103 5.46359 2.00083 5.43378 2.0006 5.40073C1.99721 4.90361 1.98872 3.66059 2.58544 2.51478C2.92146 1.86955 3.46531 1.21546 4.32773 0.731498C5.19054 0.24732 6.25363 0 7.50001 0C8.74638 0 9.80947 0.24732 10.6723 0.731502C11.5347 1.21546 12.0785 1.86956 12.4146 2.51479C13.0112 3.66047 13.0028 4.90338 12.9994 5.4005C12.9992 5.43363 12.999 5.46344 12.999 5.4897V10H9.69941V5.47374C9.69942 4.93876 9.69943 4.2453 9.404 3.67801C9.27262 3.42573 9.10162 3.24215 8.87115 3.11282C8.64107 2.9837 8.23322 2.84211 7.50001 2.84211C6.7668 2.84211 6.35894 2.98371 6.12885 3.11282C5.89837 3.24216 5.72736 3.42575 5.59598 3.67802C5.30049 4.24542 5.30055 4.9391 5.3006 5.47402Z"
+                                        fill="#444444"
+                                    ></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="copy__btn hidden" id="copyBtn">
+                <div class="copy__txt">COPY TO CLIPBOARD</div>
+                <svg width="9" height="15" viewBox="0 0 9 15" fill="none" class="copy__icon">
+                    <path
+                        fill-rule="evenodd"
+                        clip-rule="evenodd"
+                        d="M8.97282 0.679673L8.27496 0L0.5625 7.54323L1.26036 8.2229L1.26511 8.21825L8.30758 15L9 14.3151L1.96151 7.53713L8.97282 0.679673Z"
+                        fill="white"
+                    ></path>
+                    <path
+                        fill-rule="evenodd"
+                        clip-rule="evenodd"
+                        d="M8.97282 0.679673L8.27496 0L0.5625 7.54323L1.26036 8.2229L1.26511 8.21825L8.30758 15L9 14.3151L1.96151 7.53713L8.97282 0.679673Z"
+                        fill="white"
+                    ></path>
+                </svg>
+            </div>
+            <div class="planner-btns__container hidden">
+                <div class="planner-btn" id="closeBtn">
+                    <svg
+                        class="planner-btn__icon"
+                        width="22"
+                        height="21"
+                        viewBox="0 0 22 21"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path
+                            d="M20.299 0.100586L21.0061 0.807693L1.20711 20.6067L0.5 19.8996L20.299 0.100586Z"
+                            fill="black"
+                        />
+                        <path
+                            d="M1.29911 0.100586L0.592005 0.807693L20.391 20.6067L21.0981 19.8996L1.29911 0.100586Z"
+                            fill="black"
+                        />
+                    </svg>
+                    <div class="planner-btn__text">CLOSE</div>
+                </div>
+                <div class="planner-btn planner-btn--apply" id="applyBtn">
+                    <svg
+                        class="planner-btn__icon"
+                        width="23"
+                        height="18"
+                        viewBox="0 0 23 18"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path d="M1 10L8 17L22 1" stroke="#2B2B2B" />
+                    </svg>
+                    <div class="planner-btn__text">APPLY</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="hidden">
+            <img id="hideImg" src="./images/hide.png" alt="" srcset="" />
+        </div>
+
+        <!-- Треба для локального завантаження архіву -->
+        <!-- <script>
+            R2D = {};
+            R2D.OPTIONS = {};
+            R2D.URL = {
+                MERCHANT_SITE_KEY: "",
+                REACT_BASEPATH: "/planner",
+                DOMAIN: "https://dev.roomtodo.com",
+                CATALOG_TREE: "/api/category/tree?key=4500282e6846fe6650de81bd35d27540",
+                CATALOG_MATERIALS_TREE_FOR_MODELS:
+                    "/api/category/public_materials?key=4500282e6846fe6650de81bd35d27540",
+                URL_GET_PRODUCT: "/api/category/productsByIds?key=4500282e6846fe6650de81bd35d27540",
+                URL_GET_CATEGORY_PRODUCTS:
+                    "/api/category/products?key=4500282e6846fe6650de81bd35d27540",
+                URL_GET_MATERIALS_SET:
+                    "/api/category/getMaterialsBySetId?key=4500282e6846fe6650de81bd35d27540",
+
+                URL_UPLOAD_FILE: "/api/entities/upload",
+                URL_UPLOAD_ENTITY: "/api/entities",
+                URL_CONFIG_APPS: "/api/entities/apps",
+                URL_CATALOG_SEARCH: '/api/catalog/search?key=4500282e6846fe6650de81bd35d27540',
+            };
+        </script> -->
+
+        <script src="./js/PlannerHelper.js"></script>
+        <script src="./js/Configurator_1.js"></script>
+        <script src="./js/sizes.js"></script>
+        <script src="./js/right-panel.js"></script>
+        <script src="./js/script.js"></script>
+
+        <script src="./js/libs/jszip.min.js"></script>
+        <script src="./js/libs/notiflix-notify-aio-3.2.7.min.js"></script>
+        <script src="./js/libs/numeric.min.js"></script>
+    </body>
+</html>
