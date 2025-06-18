@@ -17,6 +17,8 @@ class PlannerHelper {
         this.sceneObject = null;
         this.distToCam = 0;
 
+        // this.scene3d = R2D.scene3d.middle;
+
         // -------------------- Listeners -------------------
         window.addEventListener("resize", () => {
             this.planner.setSize(plannerContainer.offsetWidth, plannerContainer.offsetHeight);
@@ -83,9 +85,9 @@ class PlannerHelper {
         R2D.scene.setMinElevation(minElevation);
     }
 
-    updateCameraSettings(sceneObject, useDefault = true) {
+    updateCameraSettings(width, height, depth, useDefault = true) {
         // Встановити налаштування камери на основі розмірів моделі
-        const { width, height, depth } = sceneObject;
+        // const { width, height, depth } = sceneObject;
         const vFovRad = (Math.PI / 180) * R2D.mouseInteractionHelper._currentCamera.fov;
         const aspect = R2D.mouseInteractionHelper._currentCamera.aspect;
 
@@ -178,5 +180,11 @@ class PlannerHelper {
 
     clearParametricScaler() {
         R2D.Tool.ps.clear();
+    }
+
+    // GROUPS
+
+    addToScene(model3d) {
+        R2D.commonSceneHelper.commonSceneObject.productObjects.add(model3d);
     }
 }

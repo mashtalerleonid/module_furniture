@@ -8,7 +8,7 @@ class Configurator_1 {
     }
 
     initializeProperties() {
-        this.configId = "advancedfurniture";
+        this.configId = "modulefurniture";
         this.configType = "";
         this.modelData = null;
         this.meshesData = {};
@@ -29,13 +29,19 @@ class Configurator_1 {
         this.initMaterials = [];
         this.objectViewer3D = null;
         this.protector = 0;
-        this.mapTagToProductIds = {};
+        this.mapTagToProductIds = null;
+
+        this.sceneObjects = [];
+        this.groupMeshesDataMap = new Map();
+        this.groupConfigInfo = [];
+        this.curIndex = 0;
     }
 
     setupListeners(R2D) {
         this.productsDataLoader = new R2D.ProductsDataLoader();
         this.init3DLoadedListener = this.onInit3DLoaded.bind(this);
         this.forReplace3DLoadedListener = this.forReplace3DLoaded.bind(this);
+        this.forReplace3DGroupLoadedListener = this.forReplace3DGroupLoaded.bind(this);
     }
 
     customizePlanner() {
@@ -44,20 +50,293 @@ class Configurator_1 {
         this.PH.removeTerrainTexture();
     }
 
-    async loadProductData(id) {
-        const url = `${R2D.URL.DOMAIN}${R2D.URL.URL_CATALOG_SEARCH}&ids=${id}`;
-        const headers = {
-            "Content-type": "application/x-www-form-urlencoded",
-        };
+    // helpers
+
+    async loadProductsData(ids) {
+        const url = `${R2D.URL.DOMAIN}${R2D.URL.URL_CATALOG_SEARCH}&ids=${ids.join(",")}`;
         const response = await fetch(url, {
             method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "x-token": R2D.token || "",
+                "x-lang": R2D.language || "",
+            },
             credentials: "include",
             mode: "cors",
-            headers,
         });
-        const loadedData = await response.json();
-        return loadedData.data.items[0];
+        const jsonObject = await response.json();
+        const parserResult = R2D.ProductDataParser.parseJSON(jsonObject.data.items);
+        const products = parserResult.map((product) => {
+            product.isGLTF = true;
+            R2D.Pool.addProductData(product);
+            return product;
+        });
+        return products;
     }
+
+    async getProductData(id) {
+        const existData = R2D.Pool.isProductData(id);
+        if (existData) {
+            existData.isGLTF = true;
+            return existData;
+        }
+
+        const url = `${R2D.URL.DOMAIN}${R2D.URL.URL_CATALOG_SEARCH}&ids=${id}`;
+
+        const response = await fetch(url, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "x-token": R2D.token || "",
+                "x-lang": R2D.language || "",
+            },
+            credentials: "include",
+            mode: "cors",
+        });
+
+        const jsonObject = await response.json();
+        const product = jsonObject.data.items[0];
+        product.isGLTF = true;
+
+        R2D.Pool.addProductData(product);
+        return product;
+    }
+
+    async getConfigData(modelId) {
+        const objectData = await this.getProductData(modelId);
+
+        const metadata =
+            objectData.metadata[this.configId]?.data || objectData.metadata.commonapp?.data;
+
+        return metadata;
+    }
+
+    getPrevSrc(id) {
+        if (id === "0") return hideImg.src;
+
+        const productData = R2D.Pool.getProductData(id);
+        if (!productData) return null;
+
+        return `${R2D.URL.DOMAIN}${productData.source.images.preview}`;
+    }
+
+    getModelName(id) {
+        const productData = R2D.Pool.getProductData(id);
+        if (!productData) return null;
+
+        return productData.name;
+    }
+
+    setGeometryToOrigin(geometry) {
+        if (!geometry.boundingBox) {
+            geometry.computeBoundingBox();
+        }
+
+        const center = new THREE.Vector3();
+        geometry.boundingBox.getCenter(center);
+
+        geometry.translate(-center.x, -center.y, -center.z);
+        geometry.needsUpdate = true;
+    }
+
+    findOwnPos(hash, meshData) {
+        const geometry = this.getMeshByHash(hash)?.geometry;
+
+        if (geometry) {
+            if (!geometry.boundingBox) {
+                geometry.computeBoundingBox();
+            }
+
+            meshData.ownPos = new THREE.Vector3();
+            geometry.boundingBox.getCenter(meshData.ownPos);
+        }
+    }
+
+    // get model3d and geometry from pool3d
+    async getInitModel3d(productId) {
+        await this.getProductData(productId);
+
+        if (R2D.Pool3D.isLoaded(productId)) {
+            return this.extractModel3d(productId);
+        }
+
+        return new Promise((resolve) => {
+            const finishHandler = (e) => {
+                if (e.data !== productId) return;
+
+                R2D.Pool3D.removeEventListener(Event.FINISH, finishHandler);
+                resolve(this.extractModel3d(productId));
+            };
+
+            R2D.Pool3D.addEventListener(Event.FINISH, finishHandler);
+            R2D.Pool3D.load(productId);
+        });
+    }
+
+    extractModel3d(productId) {
+        const model3d = new THREE.Object3D();
+
+        R2D.Pool3D.getData(productId).scene.traverse((obj) => {
+            if (obj.type === "Mesh") {
+                const mesh = obj.clone();
+                mesh.geometry = obj.geometry.clone();
+                model3d.add(mesh);
+            }
+        });
+
+        return model3d;
+    }
+
+    async getInitGeometry(productId, geomIndex = 0) {
+        const model3d = await this.getInitModel3d(productId);
+        return model3d.children[geomIndex]?.geometry || null;
+    }
+
+    setInitGeometryToMesh(mesh, id) {
+        mesh.geometry = this.extractModel3d(id).children[0].geometry;
+    }
+    // -----
+
+    findTransformMatrix(initGeom, finalGeom) {
+        const nonIndexedInitGeom = initGeom.toNonIndexed();
+        const nonIndexedFinalGeom = finalGeom.toNonIndexed();
+
+        return this.findRotationBetweenGeometries(nonIndexedInitGeom, nonIndexedFinalGeom);
+    }
+
+    findRotationBetweenGeometries(initialGeometry, finalGeometry) {
+        const posA = initialGeometry.attributes.position;
+        const posB = finalGeometry.attributes.position;
+
+        if (posA.count !== posB.count) {
+            throw new Error("Geometries must have the same number of vertices");
+        }
+
+        // Compute centroids
+        const centroidA = new THREE.Vector3();
+        const centroidB = new THREE.Vector3();
+        for (let i = 0; i < posA.count; i++) {
+            centroidA.add(new THREE.Vector3().fromBufferAttribute(posA, i));
+            centroidB.add(new THREE.Vector3().fromBufferAttribute(posB, i));
+        }
+        centroidA.divideScalar(posA.count);
+        centroidB.divideScalar(posB.count);
+
+        // Assemble corresponding points arrays (centered)
+        const pointsA = [];
+        const pointsB = [];
+        for (let i = 0; i < posA.count; i++) {
+            pointsA.push(new THREE.Vector3().fromBufferAttribute(posA, i).sub(centroidA));
+            pointsB.push(new THREE.Vector3().fromBufferAttribute(posB, i).sub(centroidB));
+        }
+
+        // Kabsch algorithm
+        // Compute covariance matrix H (zero-initialize!)
+        let H = [
+            [0, 0, 0],
+            [0, 0, 0],
+            [0, 0, 0],
+        ];
+        for (let i = 0; i < pointsA.length; i++) {
+            const a = pointsA[i];
+            const b = pointsB[i];
+            H[0][0] += a.x * b.x;
+            H[0][1] += a.x * b.y;
+            H[0][2] += a.x * b.z;
+            H[1][0] += a.y * b.x;
+            H[1][1] += a.y * b.y;
+            H[1][2] += a.y * b.z;
+            H[2][0] += a.z * b.x;
+            H[2][1] += a.z * b.y;
+            H[2][2] += a.z * b.z;
+        }
+
+        // SVD decomposition of H
+        let U, S, V;
+        if (typeof numeric !== "undefined" && numeric.svd) {
+            const svd = numeric.svd(H);
+            // U, S, V are arrays from numeric.js
+            U = svd.U;
+            V = svd.V;
+            // Compute R = V * U^T
+            // numeric.js provides transpose and dot
+            let UT = numeric.transpose(U);
+            let R = numeric.dot(V, UT);
+
+            // If det(R) < 0, fix improper rotation (reflection)
+            if (numeric.det(R) < 0) {
+                V[2][0] *= -1;
+                V[2][1] *= -1;
+                V[2][2] *= -1;
+                R = numeric.dot(V, UT);
+            }
+
+            // Convert R (3x3) to THREE.Matrix4
+            const rotMat4 = new THREE.Matrix4().set(
+                R[0][0],
+                R[0][1],
+                R[0][2],
+                0,
+                R[1][0],
+                R[1][1],
+                R[1][2],
+                0,
+                R[2][0],
+                R[2][1],
+                R[2][2],
+                0,
+                0,
+                0,
+                0,
+                1
+            );
+
+            return rotMat4;
+        } else {
+            return null;
+        }
+    }
+
+    findAlignPoint(geom, align) {
+        if (!geom.boundingBox) {
+            geom.computeBoundingBox();
+        }
+        const bbox = geom.boundingBox;
+        const alignPoint = new THREE.Vector3();
+        bbox.getCenter(alignPoint);
+
+        if (!align) {
+            return alignPoint;
+        }
+
+        if (align.x === "left") {
+            alignPoint.x = bbox.min.x;
+        } else if (align.x === "right") {
+            alignPoint.x = bbox.max.x;
+        } else if (align.x === "center") {
+            // alignPoint.x is already the center
+        }
+
+        if (align.y === "top") {
+            alignPoint.y = bbox.max.y;
+        } else if (align.y === "bottom") {
+            alignPoint.y = bbox.min.y;
+        } else if (align.y === "center") {
+            // alignPoint.y is already the center
+        }
+
+        if (align.z === "back") {
+            alignPoint.z = bbox.min.z;
+        } else if (align.z === "front") {
+            alignPoint.z = bbox.max.z;
+        } else if (align.z === "center") {
+            // alignPoint.z is already the center
+        }
+
+        return alignPoint;
+    }
+
+    // end helpers
 
     async getMatDataForMarkup() {
         const matData = [];
@@ -73,10 +352,7 @@ class Configurator_1 {
             let productData = null;
 
             if (data.addMaterial) {
-                productData = R2D.Pool.getProductData(data.addMaterial);
-                if (!productData) {
-                    productData = await this.loadProductData(data.addMaterial);
-                }
+                productData = await this.getProductData(data.addMaterial);
 
                 const canvas = await R2D.Tool.getMatPrevFromMatIdAndColor(
                     data.addMaterial,
@@ -94,10 +370,7 @@ class Configurator_1 {
                     name: productData.name,
                 });
             } else {
-                productData = R2D.Pool.getProductData(data.current);
-                if (!productData) {
-                    productData = await this.loadProductData(data.current);
-                }
+                productData = await this.getProductData(data.current);
 
                 const categoryId = Object.keys(productData.categoryMaterial)[0];
                 const treeArr = [...productData.categoryMaterial[categoryId]].reverse();
@@ -127,62 +400,46 @@ class Configurator_1 {
         return matData;
     }
 
-    getPrevSrc(id) {
-        if (id === "0") return hideImg.src;
+    // start(modelId, configInfo) {
+    //     this.startModelId = modelId;
+    //     const idToPlace =
+    //         configInfo?.configType === "modelReplace" ? configInfo.modelData.curId : modelId;
 
-        const productData = R2D.Pool.getProductData(id);
-        if (!productData) return null;
+    //     const settings = {
+    //         x: 0,
+    //         y: 0,
+    //         z: 0,
+    //     };
 
-        return `${R2D.URL.DOMAIN}${productData.source.images.preview}`;
-    }
+    //     this.PH.placeModel(idToPlace, settings, () => {
+    //         this.initializeSceneObject(configInfo);
+    //         this.PH.updateCameraSettings(this.sceneObject);
+    //         this.startConfigurate(this.startModelId);
+    //     });
+    // }
 
-    getModelName(id) {
-        const productData = R2D.Pool.getProductData(id);
-        if (!productData) return null;
+    // initializeSceneObject(configInfo) {
+    //     if (this.isPlanner) {
+    //         this.sceneObject.width = configInfo.params.width;
+    //         this.sceneObject.height = configInfo.params.height;
+    //         this.sceneObject.depth = configInfo.params.depth;
+    //         this.sceneObject.elevation = configInfo.params.elevation || 0;
+    //     }
 
-        return productData.name;
-    }
+    //     curParams = {
+    //         width: this.sceneObject.width,
+    //         height: this.sceneObject.height,
+    //         depth: this.sceneObject.depth,
+    //         elevation:
+    //             this.sceneObject.elevation || this.sceneObject.objectData.property.position.y,
+    //     };
 
-    start(modelId, configInfo) {
-        this.startModelId = modelId;
-        const idToPlace =
-            configInfo?.configType === "modelReplace" ? configInfo.modelData.curId : modelId;
-
-        const settings = {
-            x: 0,
-            y: 0,
-            z: 0,
-        };
-
-        this.PH.placeModel(idToPlace, settings, () => {
-            this.initializeSceneObject(configInfo);
-            this.PH.updateCameraSettings(this.sceneObject);
-            this.startConfigurate(this.startModelId);
-        });
-    }
-
-    initializeSceneObject(configInfo) {
-        if (this.isPlanner) {
-            this.sceneObject.width = configInfo.params.width;
-            this.sceneObject.height = configInfo.params.height;
-            this.sceneObject.depth = configInfo.params.depth;
-            this.sceneObject.elevation = configInfo.params.elevation || 0;
-        }
-
-        curParams = {
-            width: this.sceneObject.width,
-            height: this.sceneObject.height,
-            depth: this.sceneObject.depth,
-            elevation:
-                this.sceneObject.elevation || this.sceneObject.objectData.property.position.y,
-        };
-
-        this.configInfo =
-            configInfo && Object.keys(configInfo).some((key) => key !== "params")
-                ? configInfo
-                : null;
-        if (this.configInfo) this.sceneObject.configInfo = configInfo;
-    }
+    //     this.configInfo =
+    //         configInfo && Object.keys(configInfo).some((key) => key !== "params")
+    //             ? configInfo
+    //             : null;
+    //     if (this.configInfo) this.sceneObject.configInfo = configInfo;
+    // }
 
     findConfigType() {
         return this.configData.geometries?.length > 0 || this.sceneObject.isParametric
@@ -211,6 +468,8 @@ class Configurator_1 {
     }
 
     async createMapTagToId() {
+        if (this.mapTagToProductIds) return;
+
         const tagsArr = [];
         this.configData.model.modelsForReplace.forEach((model) => {
             if (model.tag != "0" && !tagsArr.includes(model.tag)) {
@@ -316,9 +575,12 @@ class Configurator_1 {
                         geometryIndex: index,
                     };
 
+                    let hasPos = false;
                     const mesh = this.getMeshByHash(hash);
-                    const keys = Object.keys(mesh.userData);
-                    const hasPos = keys.some((key) => key.startsWith("childPos"));
+                    if (mesh) {
+                        const keys = Object.keys(mesh.userData);
+                        hasPos = keys.some((key) => key.startsWith("childPos"));
+                    }
 
                     if (hasPos) {
                         this.meshesData[hash].childrenPos = [];
@@ -369,39 +631,19 @@ class Configurator_1 {
         }
 
         if (this.idsForLoad.length) {
-            R2D.Pool3D.addEventListener(Event.FINISH, this.init3DLoadedListener);
             this.idsForLoad.forEach((id) => {
-                R2D.Pool.getProductData(id).isGLTF = true;
-                R2D.Pool3D.load(id);
+                if (R2D.Pool3D.isLoaded) {
+                    this.onInit3DLoaded({ data: id });
+                } else {
+                    R2D.Pool3D.addEventListener(Event.FINISH, this.init3DLoadedListener);
+                    R2D.Pool.getProductData(id).isGLTF = true;
+                    R2D.Pool3D.load(id);
+                }
             });
         } else {
-            this.dispatchEvent(new Event("renderSettingsContainer"));
+            // this.dispatchEvent(new Event("renderSettingsContainer"));
+            this.configurateNextModel();
         }
-    }
-
-    async getConfigData(modelId) {
-        // const objectData =
-        //     R2D.Pool.getProductData(modelId) || (await this.loadProductData(modelId));
-        // const metaZipSrc = `${R2D.URL.DOMAIN}${objectData.source.body.metaZip}`;
-        // const response = await fetch(metaZipSrc);
-        // const data = await response.blob();
-        // const zip = await JSZip.loadAsync(data);
-        // const json = await zip.files["main.json"].async("string");
-        // let obj = null;
-        // try {
-        //     obj = JSON.parse(json);
-        // } catch (error) {
-        //     console.log(error);
-        // }
-        // return obj;
-
-        const objectData =
-            R2D.Pool.getProductData(modelId) || (await this.loadProductData(modelId));
-
-        const metadata =
-            objectData.metadata[this.configId]?.data || objectData.metadata.commonapp?.data;
-
-        return metadata;
     }
 
     async onInit3DLoaded(e) {
@@ -423,9 +665,13 @@ class Configurator_1 {
 
         await this.findTransformMatricesAndAlignPoints();
 
-        if (this.configInfo) {
-            this.applyConfigInfo();
-        } else {
+        // if (this.configInfo) {
+        //     this.applyConfigInfo();
+        // } else {
+        //     this.replaceAllMeshes();
+        // }
+
+        if (!this.configInfo) {
             this.replaceAllMeshes();
         }
 
@@ -437,20 +683,23 @@ class Configurator_1 {
 
         this.updateAllMeshes();
 
-        this.dispatchEvent(new Event("renderSettingsContainer"));
+        // this.dispatchEvent(new Event("renderSettingsContainer"));
+
+        this.groupMeshesDataMap.set(this.sceneObject, this.meshesData);
+        this.configurateNextModel();
     }
 
-    applyConfigInfo() {
-        const hashesFromConfigInfo = Object.keys(this.configInfo.meshesData);
-        for (const hash in this.meshesData) {
-            if (hashesFromConfigInfo.includes(hash)) {
-                this.replaceMesh(this.meshesData[hash].curId, hash);
-            } else {
-                this.removeMeshFromModel(hash);
-            }
-        }
-        this.sceneObject.setMaterialsObjects(this.configInfo.materials);
-    }
+    // applyConfigInfo() {
+    //     const hashesFromConfigInfo = Object.keys(this.configInfo.meshesData);
+    //     for (const hash in this.meshesData) {
+    //         if (hashesFromConfigInfo.includes(hash)) {
+    //             this.replaceMesh(this.meshesData[hash].curId, hash);
+    //         } else {
+    //             this.removeMeshFromModel(hash);
+    //         }
+    //     }
+    //     this.sceneObject.setMaterialsObjects(this.configInfo.materials);
+    // }
 
     replaceAllMeshes() {
         for (const hash in this.meshesData) {
@@ -458,20 +707,18 @@ class Configurator_1 {
         }
     }
 
-    startReplaceMesh(id, hash) {
+    async startReplaceMesh(id, hash) {
         this.newMeshId = id;
         this.newMeshHash = hash;
 
-        this.productsDataLoader.loadOne(id, () => {
-            R2D.Pool.getProductData(id).isGLTF = true;
+        await this.getProductData(id);
 
-            if (R2D.Pool3D.isLoaded(id)) {
-                this.forReplace3DLoadedListener();
-            } else {
-                R2D.Pool3D.addEventListener(Event.FINISH, this.forReplace3DLoadedListener);
-                R2D.Pool3D.load(id);
-            }
-        });
+        if (R2D.Pool3D.isLoaded(id)) {
+            this.forReplace3DLoadedListener();
+        } else {
+            R2D.Pool3D.addEventListener(Event.FINISH, this.forReplace3DLoadedListener);
+            R2D.Pool3D.load(id);
+        }
     }
 
     forReplace3DLoaded(e) {
@@ -813,18 +1060,6 @@ class Configurator_1 {
         }
     }
 
-    setGeometryToOrigin(geometry) {
-        if (!geometry.boundingBox) {
-            geometry.computeBoundingBox();
-        }
-
-        const center = new THREE.Vector3();
-        geometry.boundingBox.getCenter(center);
-
-        geometry.translate(-center.x, -center.y, -center.z);
-        geometry.needsUpdate = true;
-    }
-
     getConfigDataByHash(hash) {
         const index = this.initMaterials.findIndex((mo) => mo.hash === hash);
         return this.configData.geometries.find((data) => data.geometryIndex === index);
@@ -843,19 +1078,6 @@ class Configurator_1 {
                 this.meshesData[childHash].parentHash = hash;
             });
         });
-    }
-
-    findOwnPos(hash, meshData) {
-        const geometry = this.getMeshByHash(hash)?.geometry;
-
-        if (geometry) {
-            if (!geometry.boundingBox) {
-                geometry.computeBoundingBox();
-            }
-
-            meshData.ownPos = new THREE.Vector3();
-            geometry.boundingBox.getCenter(meshData.ownPos);
-        }
     }
 
     findOwnPosNoChildren() {
@@ -1034,7 +1256,12 @@ class Configurator_1 {
             const initGeom = await this.getInitGeometry(meshData.defaultId);
             if (!initGeom) continue;
 
-            const finalGeom = this.getMeshByHash(hash)?.geometry;
+            // const finalGeom = this.getMeshByHash(hash)?.geometry;
+            // if (!finalGeom) continue;
+            const model3d = await this.getInitModel3d(this.sceneObject.getProductId());
+            const finalGeom = model3d.children.find(
+                (child) => child.userData.md5 === hash
+            )?.geometry;
             if (!finalGeom) continue;
 
             const transformMatrix = this.findTransformMatrix(initGeom, finalGeom);
@@ -1046,180 +1273,198 @@ class Configurator_1 {
         }
     }
 
-    async getInitGeometry(productId) {
-        let productData = R2D.Pool.getProductData(productId);
-        if (!productData) {
-            productData = await this.loadProductData(productId);
-        }
-        R2D.Pool.getProductData(productId).isGLTF = true;
+    // GROUPS
 
-        if (R2D.Pool3D.isLoaded(productId)) {
-            return this.extractGeometry(productId);
-        }
-
-        return new Promise((resolve) => {
-            const finishHandler = (e) => {
-                if (e.data !== productId) return;
-
-                R2D.Pool3D.removeEventListener(Event.FINISH, finishHandler);
-                resolve(this.extractGeometry(productId));
+    findBounds() {
+        const bounds = {
+            minX: Infinity,
+            maxX: -Infinity,
+            minY: Infinity,
+            maxY: -Infinity,
+            minZ: Infinity,
+            maxZ: -Infinity,
+        };
+        this.sceneObjects.forEach((sceneObject) => {
+            const pos = { x: sceneObject.x, y: sceneObject.y, z: sceneObject.z };
+            const size = {
+                width: sceneObject.width,
+                height: sceneObject.height,
+                depth: sceneObject.depth,
             };
-
-            R2D.Pool3D.addEventListener(Event.FINISH, finishHandler);
-            R2D.Pool3D.load(productId);
+            bounds.minX = Math.min(bounds.minX, pos.x - size.width / 2);
+            bounds.maxX = Math.max(bounds.maxX, pos.x + size.width / 2);
+            bounds.minY = Math.min(bounds.minY, pos.y - size.height / 2);
+            bounds.maxY = Math.max(bounds.maxY, pos.y + size.height / 2);
+            bounds.minZ = Math.min(bounds.minZ, pos.z - size.depth / 2);
+            bounds.maxZ = Math.max(bounds.maxZ, pos.z + size.depth / 2);
         });
+
+        return {
+            width: bounds.maxX - bounds.minX,
+            height: bounds.maxY - bounds.minY,
+            depth: bounds.maxZ - bounds.minZ,
+        };
     }
 
-    extractGeometry(productId) {
-        let geometry = null;
-        R2D.Pool3D.getData(productId).scene.traverse((obj) => {
-            if (obj.type === "Mesh") {
-                geometry = obj.geometry;
+    async startGroup(models) {
+        const modelIds = models.map((model) => model.modelId);
+        const uniqueModelsIds = [...new Set(modelIds)];
+
+        await this.loadProductsData(uniqueModelsIds);
+
+        this.sceneObjects = models.map((model) => {
+            const productData = R2D.Pool.getProductData(model.modelId);
+            const sceneObject = new R2D.SceneObjectModel(productData);
+            sceneObject.x = model.configInfo.params.x || 0;
+            sceneObject.y = model.configInfo.params.y || 0;
+            sceneObject.z = model.configInfo.params.z || 0;
+
+            if (this.isPlanner) {
+                sceneObject.elevation = model.configInfo.params.elevation || 0;
             }
+            sceneObject.configInfo = Object.keys(model.configInfo).some((key) => key !== "params")
+                ? model.configInfo
+                : null;
+
+            return sceneObject;
         });
-        return geometry;
+
+        const bounds = this.findBounds();
+        this.PH.updateCameraSettings(bounds.width, bounds.height, bounds.depth);
+
+        this.sceneObjects.forEach((sceneObject) => {
+            R2D.scene.add(sceneObject);
+        });
+
+        this.configurateNextModel();
     }
 
-    setInitGeometryToMesh(mesh, id) {
-        mesh.geometry = this.extractGeometry(id).clone();
+    async configurateNextModel() {
+        if (this.curIndex >= this.sceneObjects.length) {
+            return;
+        }
+
+        this.clear();
+
+        this.sceneObject = this.sceneObjects[this.curIndex];
+        this.startModelId = this.sceneObject.getProductId();
+        this.configInfo = this.sceneObject.configInfo;
+        this.objectViewer3D = R2D.commonSceneHelper.productHelper.findObjectView3dBySceneObject(
+            this.sceneObject
+        );
+        this.model3d = this.objectViewer3D.object3d;
+
+        await this.startConfigurate(this.startModelId);
+
+        if (this.curIndex >= this.sceneObjects.length - 1) {
+            this.dispatchEvent(new Event("renderSettingsContainer"));
+        }
+
+        this.curIndex++;
     }
 
-    findTransformMatrix(initGeom, finalGeom) {
-        const nonIndexedInitGeom = initGeom.toNonIndexed();
-        const nonIndexedFinalGeom = finalGeom.toNonIndexed();
-
-        return this.findRotationBetweenGeometries(nonIndexedInitGeom, nonIndexedFinalGeom);
+    clear() {
+        this.meshesData = {};
     }
 
-    findRotationBetweenGeometries(initialGeometry, finalGeometry) {
-        const posA = initialGeometry.attributes.position;
-        const posB = finalGeometry.attributes.position;
+    setGroupMaterialAt(hash, materialId, type) {
+        this.groupConfigInfo = [];
 
-        if (posA.count !== posB.count) {
-            throw new Error("Geometries must have the same number of vertices");
-        }
+        const defaultId = this.getDefaultMatIdByHash(hash);
 
-        // Compute centroids
-        const centroidA = new THREE.Vector3();
-        const centroidB = new THREE.Vector3();
-        for (let i = 0; i < posA.count; i++) {
-            centroidA.add(new THREE.Vector3().fromBufferAttribute(posA, i));
-            centroidB.add(new THREE.Vector3().fromBufferAttribute(posB, i));
-        }
-        centroidA.divideScalar(posA.count);
-        centroidB.divideScalar(posB.count);
+        this.sceneObjects.forEach((sceneObject, index) => {
+            const materials = sceneObject.getMaterialsObjects();
+            materials.forEach((mo) => {
+                if (mo.default == defaultId) {
+                    mo[type] = materialId;
+                }
+            });
 
-        // Assemble corresponding points arrays (centered)
-        const pointsA = [];
-        const pointsB = [];
-        for (let i = 0; i < posA.count; i++) {
-            pointsA.push(new THREE.Vector3().fromBufferAttribute(posA, i).sub(centroidA));
-            pointsB.push(new THREE.Vector3().fromBufferAttribute(posB, i).sub(centroidB));
-        }
-
-        // Kabsch algorithm
-        // Compute covariance matrix H (zero-initialize!)
-        let H = [
-            [0, 0, 0],
-            [0, 0, 0],
-            [0, 0, 0],
-        ];
-        for (let i = 0; i < pointsA.length; i++) {
-            const a = pointsA[i];
-            const b = pointsB[i];
-            H[0][0] += a.x * b.x;
-            H[0][1] += a.x * b.y;
-            H[0][2] += a.x * b.z;
-            H[1][0] += a.y * b.x;
-            H[1][1] += a.y * b.y;
-            H[1][2] += a.y * b.z;
-            H[2][0] += a.z * b.x;
-            H[2][1] += a.z * b.y;
-            H[2][2] += a.z * b.z;
-        }
-
-        // SVD decomposition of H
-        let U, S, V;
-        if (typeof numeric !== "undefined" && numeric.svd) {
-            const svd = numeric.svd(H);
-            // U, S, V are arrays from numeric.js
-            U = svd.U;
-            V = svd.V;
-            // Compute R = V * U^T
-            // numeric.js provides transpose and dot
-            let UT = numeric.transpose(U);
-            let R = numeric.dot(V, UT);
-
-            // If det(R) < 0, fix improper rotation (reflection)
-            if (numeric.det(R) < 0) {
-                V[2][0] *= -1;
-                V[2][1] *= -1;
-                V[2][2] *= -1;
-                R = numeric.dot(V, UT);
-            }
-
-            // Convert R (3x3) to THREE.Matrix4
-            const rotMat4 = new THREE.Matrix4().set(
-                R[0][0],
-                R[0][1],
-                R[0][2],
-                0,
-                R[1][0],
-                R[1][1],
-                R[1][2],
-                0,
-                R[2][0],
-                R[2][1],
-                R[2][2],
-                0,
-                0,
-                0,
-                0,
-                1
+            this.sceneObject = sceneObject;
+            this.startModelId = this.sceneObject.getProductId();
+            this.meshesData = this.groupMeshesDataMap.get(sceneObject);
+            this.objectViewer3D = R2D.commonSceneHelper.productHelper.findObjectView3dBySceneObject(
+                this.sceneObject
             );
+            this.model3d = this.objectViewer3D.object3d;
 
-            return rotMat4;
+            this.sceneObject.update(); // закоментувати щоб не оновлювався в кон-рі
+
+            this.groupConfigInfo.push(this.createConfigInfo());
+        });
+
+        this.insertGroupToPlanner();
+    }
+
+    async startReplaceGroupMesh(id, hash) {
+        this.newMeshId = id;
+        this.newMeshHash = hash;
+
+        await this.getProductData(id);
+
+        if (R2D.Pool3D.isLoaded(id)) {
+            this.forReplace3DGroupLoadedListener();
         } else {
-            return null;
+            R2D.Pool3D.addEventListener(Event.FINISH, this.forReplace3DGroupLoadedListener);
+            R2D.Pool3D.load(id);
         }
     }
 
-    findAlignPoint(geom, align) {
-        if (!geom.boundingBox) {
-            geom.computeBoundingBox();
-        }
-        const bbox = geom.boundingBox;
-        const alignPoint = new THREE.Vector3();
-        bbox.getCenter(alignPoint);
+    forReplace3DGroupLoaded(e) {
+        R2D.Pool3D.removeEventListener(Event.FINISH, this.forReplace3DGroupLoadedListener);
 
-        if (!align) {
-            return alignPoint;
-        }
+        this.groupConfigInfo = [];
 
-        if (align.x === "left") {
-            alignPoint.x = bbox.min.x;
-        } else if (align.x === "right") {
-            alignPoint.x = bbox.max.x;
-        } else if (align.x === "center") {
-            // alignPoint.x is already the center
-        }
+        const defaultId = this.getDefaultMatIdByHash(this.newMeshHash);
 
-        if (align.y === "top") {
-            alignPoint.y = bbox.max.y;
-        } else if (align.y === "bottom") {
-            alignPoint.y = bbox.min.y;
-        } else if (align.y === "center") {
-            // alignPoint.y is already the center
-        }
+        this.sceneObjects.forEach((sceneObject, index) => {
+            this.sceneObject = sceneObject;
+            this.startModelId = this.sceneObject.getProductId();
+            this.meshesData = this.groupMeshesDataMap.get(sceneObject);
+            this.objectViewer3D = R2D.commonSceneHelper.productHelper.findObjectView3dBySceneObject(
+                this.sceneObject
+            );
+            this.model3d = this.objectViewer3D.object3d;
 
-        if (align.z === "back") {
-            alignPoint.z = bbox.min.z;
-        } else if (align.z === "front") {
-            alignPoint.z = bbox.max.z;
-        } else if (align.z === "center") {
-            // alignPoint.z is already the center
-        }
+            let hashesForReplace = [];
+            const materials = sceneObject.getMaterialsObjects();
 
-        return alignPoint;
+            materials.forEach((mo) => {
+                if (mo.default == defaultId) {
+                    hashesForReplace.push(mo.hash);
+                }
+            });
+
+            hashesForReplace.forEach((hash) => {
+                this.replaceMesh(this.newMeshId, hash);
+            });
+
+            this.updateAllMeshes();
+            this.groupConfigInfo.push(this.createConfigInfo());
+        });
+
+        this.insertGroupToPlanner();
+    }
+
+    getDefaultMatIdByHash(hash) {
+        const materials = this.sceneObject.getMaterialsObjects();
+        const material = materials.find((mo) => mo.hash === hash);
+        return material?.default || 0;
+    }
+
+    insertGroupToPlanner() {
+        let obj = null;
+        if (models.length === 1) {
+            obj = {
+                action: "insert_to_planner",
+                configInfo: this.groupConfigInfo[0],
+            };
+        } else {
+            obj = {
+                action: "insert_to_planner",
+                groupConfigInfo: this.groupConfigInfo,
+            };
+        }
+        window.parent.postMessage(JSON.stringify(obj), "*");
     }
 }

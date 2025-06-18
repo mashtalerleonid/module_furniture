@@ -1,6 +1,8 @@
 let urlMaterials = R2D.URL.DOMAIN + R2D.URL.CATALOG_MATERIALS_TREE_FOR_MODELS;
 
-const plannerContainer = document.querySelector("#configurator-container");
+// const plannerContainer = document.querySelector("#configurator-container");
+const plannerContainer = document.createElement("div");
+plannerContainer.id = "configurator-container";
 
 let configurator = null;
 
@@ -67,7 +69,7 @@ function onPlannercoreLoaded() {
     );
 
     fetchMaterialTree().then(() => {
-        configurator.start(modelId, configInfo);
+        configurator.startGroup(models);
     });
 }
 
@@ -75,6 +77,7 @@ function onPlannercoreLoaded() {
 // let configInfo = null;
 // let isLocalHost = true;
 // let modelId = "34648";
+// let models = null;
 // if (isLocalHost) {
 //     window.addEventListener("message", (e) => {
 //         if (!e.data || typeof e.data !== "string" || e.data.startsWith("/*framebus*/")) return;
@@ -83,8 +86,12 @@ function onPlannercoreLoaded() {
 //         if (data.action === "start_configurate_localhost") {
 //             isLocalHost = false;
 
-//             modelId = data.modelId;
-//             configInfo = data.configInfo;
+//             if (data.models) {
+//                 models = data.models;
+//             } else {
+//                 models = [{ modelId: data.modelId, configInfo: data.configInfo }];
+//             }
+
 //             onPlannercoreLoaded();
 //         }
 //     });

@@ -19,7 +19,7 @@ colorpickerEl.classList.add("colorpicker");
 
 const plannerBtnsContainer = document.querySelector(".planner-btns__container");
 const closeBtn = document.querySelector("#closeBtn");
-const applyBtn = document.querySelector("#applyBtn");
+// const applyBtn = document.querySelector("#applyBtn");
 const copyBtn = document.querySelector("#copyBtn");
 
 let materialsListEl = document.createElement("div");
@@ -42,9 +42,9 @@ closeBtn.addEventListener("click", () => {
     configurator.close();
 });
 
-applyBtn.addEventListener("click", () => {
-    configurator.insertToPlanner();
-});
+// applyBtn.addEventListener("click", () => {
+//     configurator.insertToPlanner();
+// });
 
 copyBtn.addEventListener("click", () => {
     configurator.copyModelToGlobalClipboard();
@@ -182,7 +182,11 @@ function onSubpropItemClick(e) {
         configurator.hideMesh(hash);
     } else {
         // замінити меш
-        configurator.startReplaceMesh(e.currentTarget.dataset.id, e.currentTarget.dataset.hash);
+        if (models) {
+            configurator.startReplaceGroupMesh(id, hash);
+        } else {
+            configurator.startReplaceMesh(id, hash);
+        }
     }
 }
 
@@ -226,6 +230,7 @@ async function onCurMaterialClick(e) {
 }
 
 function onCurMaterialMouseEnter(e) {
+    if (models) return;
     selectedHash = e.target.querySelector("img").dataset.hash;
     if (selectedHash) {
         configurator.setMeshActive(selectedHash);
@@ -242,7 +247,11 @@ function onMaterialClick(e) {
     const productId = e.target.dataset.id;
     if (!productId) return;
 
-    configurator.setMaterialAt(selectedHash, productId, "current");
+    if (models) {
+        configurator.setGroupMaterialAt(selectedHash, productId, "current");
+    } else {
+        configurator.setMaterialAt(selectedHash, productId, "current");
+    }
 }
 
 function onNavBackBtnClick(e) {
@@ -433,3 +442,5 @@ function renderColorpicker(name, color) {
         isBackBtn: true,
     });
 }
+
+// GROUPS
