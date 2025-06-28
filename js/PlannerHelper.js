@@ -94,7 +94,7 @@ class PlannerHelper {
         const distance = findCameraDist(aspect, vFovRad, width, height, depth);
         const minDist = distance * 0.3;
         const maxDist = distance * 1.5;
-        
+
         R2D.view3d.setCameraSettings({
             minDist, //мінімальна відстань від моделі до камери
             maxDist, //максимальна відстань від моделі до камери
@@ -182,9 +182,142 @@ class PlannerHelper {
         R2D.Tool.ps.clear();
     }
 
-    // GROUPS
+    //
 
-    addToScene(model3d) {
-        R2D.commonSceneHelper.commonSceneObject.productObjects.add(model3d);
+    async loadProductsData(ids) {
+        const url = `${R2D.URL.DOMAIN}${R2D.URL.URL_CATALOG_SEARCH}&ids=${ids.join(",")}`;
+        const response = await fetch(url, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "x-token": R2D.token || "",
+                "x-lang": R2D.language || "",
+            },
+            credentials: "include",
+            mode: "cors",
+        });
+        const jsonObject = await response.json();
+        const parserResult = R2D.ProductDataParser.parseJSON(jsonObject.data.items);
+        const products = parserResult.map((product) => {
+            product.isGLTF = true;
+            R2D.Pool.addProductData(product);
+            return product;
+        });
+        return products;
+    }
+
+    async getProductData(id) {
+        const existData = R2D.Pool.isProductData(id);
+        if (existData) {
+            existData.isGLTF = true;
+            return existData;
+        }
+
+        const url = `${R2D.URL.DOMAIN}${R2D.URL.URL_CATALOG_SEARCH}&ids=${id}`;
+
+        const response = await fetch(url, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "x-token": R2D.token || "",
+                "x-lang": R2D.language || "",
+            },
+            credentials: "include",
+            mode: "cors",
+        });
+
+        const jsonObject = await response.json();
+        const product = jsonObject.data.items[0];
+        product.isGLTF = true;
+
+        R2D.Pool.addProductData(product);
+        return product;
+    }
+
+    async getConfigData(modelId) {
+        const objectData = await this.getProductData(modelId);
+
+        const metadata =
+            objectData.metadata[this.configId]?.data || objectData.metadata.commonapp?.data;
+
+        return metadata;
+    }
+
+    getPrevSrc(id) {
+        if (id === "0") return hideImg.src;
+
+        const productData = R2D.Pool.getProductData(id);
+        if (!productData) return null;
+
+        return `${R2D.URL.DOMAIN}${productData.source.images.preview}`;
+    }
+
+    getModelName(id) {
+        const productData = R2D.Pool.getProductData(id);
+        if (!productData) return null;
+
+        return productData.name;
+    }
+
+    async getInitModel3d(productId) {
+        await this.getProductData(productId);
+
+        if (R2D.Pool3D.isLoaded(productId)) {
+            return this.extractModel3d(productId);
+        }
+
+        return new Promise((resolve) => {
+            const finishHandler = (e) => {
+                if (e.data !== productId) return;
+
+                R2D.Pool3D.removeEventListener(Event.FINISH, finishHandler);
+                resolve(this.extractModel3d(productId));
+            };
+
+            R2D.Pool3D.addEventListener(Event.FINISH, finishHandler);
+            R2D.Pool3D.load(productId);
+        });
+    }
+
+    extractModel3d(productId) {
+        // має бути завантажений в Pool3D
+        const model3d = new THREE.Object3D();
+
+        R2D.Pool3D.getData(productId).scene.traverse((obj) => {
+            if (obj.type === "Mesh") {
+                const mesh = obj.clone();
+                mesh.geometry = obj.geometry.clone();
+                model3d.add(mesh);
+            }
+        });
+
+        return model3d;
+    }
+
+    async getInitGeometry(productId, geomIndex = 0) {
+        const model3d = await this.getInitModel3d(productId);
+        return model3d.children[geomIndex]?.geometry || null;
+    }
+
+    setInitGeometryToMesh(mesh, id) {
+        // має бути завантажений в Pool3D
+        mesh.geometry = this.extractModel3d(id).children[0].geometry;
+    }
+
+    addModel3dToScene(sceneObject) {
+        sceneObject.model3d.position.set(sceneObject.x, sceneObject.y, sceneObject.z);
+        sceneObject.model3d.rotation.set(
+            (sceneObject.rotationX * Math.PI) / 180,
+            (sceneObject.rotationY * Math.PI) / 180,
+            (sceneObject.rotationZ * Math.PI) / 180
+        );
+        if (sceneObject.flipX) {
+            sceneObject.model3d.scale.x *= -1;
+        }
+        if (sceneObject.flipZ) {
+            sceneObject.model3d.scale.z *= -1;
+        }
+
+        R2D.commonSceneObject.productObjects.add(sceneObject.model3d);
     }
 }

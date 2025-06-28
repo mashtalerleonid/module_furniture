@@ -55,7 +55,7 @@ function onThrisLoaded() {
 function onPlannercoreLoaded() {
     // if (isLocalHost) return; //розкоментувати для запуску кон-ра в планері запущеному на localhost:9000 з http://127.0.0.1:5500/
 
-    configurator = new Configurator_1(plannerContainer, R2D);
+    configurator = new Configurator(plannerContainer, R2D);
 
     configurator.addEventListener("clearCurMaterialsMarkup", clearCurMaterialsMarkupListener);
     configurator.addEventListener("updateCurMaterialsMarkup", updateCurMaterialsMarkupListener);
@@ -77,7 +77,7 @@ function onPlannercoreLoaded() {
 // let configInfo = null;
 // let isLocalHost = true;
 // let modelId = "34648";
-// let models = null;
+// let models = [{ modelId, configInfo: { params: {} } }];
 // if (isLocalHost) {
 //     window.addEventListener("message", (e) => {
 //         if (!e.data || typeof e.data !== "string" || e.data.startsWith("/*framebus*/")) return;

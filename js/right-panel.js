@@ -182,11 +182,7 @@ function onSubpropItemClick(e) {
         configurator.hideMesh(hash);
     } else {
         // замінити меш
-        if (models) {
-            configurator.startReplaceGroupMesh(id, hash);
-        } else {
-            configurator.startReplaceMesh(id, hash);
-        }
+        configurator.startReplaceGroupMesh(id, hash);
     }
 }
 
@@ -230,28 +226,23 @@ async function onCurMaterialClick(e) {
 }
 
 function onCurMaterialMouseEnter(e) {
-    if (models) return;
-    selectedHash = e.target.querySelector("img").dataset.hash;
-    if (selectedHash) {
-        configurator.setMeshActive(selectedHash);
-    } else {
-        configurator.unsetMeshActive();
-    }
+    // selectedHash = e.target.querySelector("img").dataset.hash;
+    // if (selectedHash) {
+    //     configurator.setMeshActive(selectedHash);
+    // } else {
+    //     configurator.unsetMeshActive();
+    // }
 }
 
 function onCurMaterialMouseLeave() {
-    configurator.unsetMeshActive();
+    // configurator.unsetMeshActive();
 }
 
 function onMaterialClick(e) {
     const productId = e.target.dataset.id;
     if (!productId) return;
 
-    if (models) {
-        configurator.setGroupMaterialAt(selectedHash, productId, "current");
-    } else {
-        configurator.setMaterialAt(selectedHash, productId, "current");
-    }
+    configurator.setGroupMaterialAt(selectedHash, productId, "current");
 }
 
 function onNavBackBtnClick(e) {
@@ -334,12 +325,12 @@ async function renderSettingsContainer(side = "to-left") {
         elShow: settingsContainerEl,
         navTitle:
             configurator.configData.model.title ||
-            configurator.getModelName(configurator.startModelId),
+            configurator.PH.getModelName(configurator.startModelId),
         side: side,
         isBackBtn: false,
     });
 
-    configurator.unsetMeshActive();
+    // configurator.unsetMeshActive();
 
     // ---functions---
 
@@ -366,8 +357,8 @@ async function renderSettingsContainer(side = "to-left") {
 
         let markup = data.modelsForReplace
             .map((itemData) => {
-                const src = configurator.getPrevSrc(itemData.id);
-                const modelName = configurator.getModelName(itemData.id);
+                const src = configurator.PH.getPrevSrc(itemData.id);
+                const modelName = configurator.PH.getModelName(itemData.id);
 
                 return src
                     ? `<div class="subprop__item" data-id="${itemData.id}" data-hash="${hash}">
@@ -442,5 +433,3 @@ function renderColorpicker(name, color) {
         isBackBtn: true,
     });
 }
-
-// GROUPS
