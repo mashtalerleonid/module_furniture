@@ -952,18 +952,6 @@ class Configurator {
         });
     }
 
-    insertToPlanner() {
-        window.parent.postMessage(
-            JSON.stringify({
-                action: "insert_to_planner",
-                configInfo: this.createConfigInfo(),
-            }),
-            "*"
-        );
-
-        this.PH.disposeRenderers();
-    }
-
     close() {
         window.parent.postMessage(
             JSON.stringify({
@@ -1037,8 +1025,8 @@ class Configurator {
                 width: this.sceneObject.width,
                 height: this.sceneObject.height,
                 depth: this.sceneObject.depth,
-                elevation:
-                    this.sceneObject.elevation || this.sceneObject.objectData.property.position.y,
+                // elevation:
+                //     this.sceneObject.elevation || this.sceneObject.objectData.property.position.y,
             };
         }
 
@@ -1100,9 +1088,9 @@ class Configurator {
             sceneObject.flipX = model.configInfo.params.flipX || false;
             sceneObject.flipZ = model.configInfo.params.flipZ || false;
 
-            if (this.isPlanner) {
-                sceneObject.elevation = model.configInfo.params.elevation || 0;
-            }
+            // if (this.isPlanner) {
+            //     sceneObject.elevation = model.configInfo.params.elevation || 0;
+            // }
             sceneObject.configInfo = Object.keys(model.configInfo).some((key) => key !== "params")
                 ? model.configInfo
                 : null;

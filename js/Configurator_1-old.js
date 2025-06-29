@@ -1485,4 +1485,16 @@ class Configurator_1 {
 
     //     this.updateAllMeshes();
     // }
+
+    // insertToPlanner() {
+    //     window.parent.postMessage(
+    //         JSON.stringify({
+    //             action: "insert_to_planner",
+    //             configInfo: this.createConfigInfo(),
+    //         }),
+    //         "*"
+    //     );
+
+    //     this.PH.disposeRenderers();
+    // }
 }
