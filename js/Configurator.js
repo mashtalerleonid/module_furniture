@@ -524,10 +524,6 @@ class Configurator {
                         this.PH.configurateParametric();
                     }
                 }
-
-                if (this.configInfo) {
-                    this.sceneObject.setMaterialsObjects(this.configInfo.materials);
-                }
             } else if (this.configType === "modelReplace") {
                 // заміна моделей
                 this.modelData = this.configData.model;
@@ -1087,11 +1083,14 @@ class Configurator {
             sceneObject.rotationZ = model.configInfo.params.rotationZ || 0;
             sceneObject.flipX = model.configInfo.params.flipX || false;
             sceneObject.flipZ = model.configInfo.params.flipZ || false;
+            sceneObject.setMaterialsObjects(model.configInfo.materials);
 
             // if (this.isPlanner) {
             //     sceneObject.elevation = model.configInfo.params.elevation || 0;
             // }
-            sceneObject.configInfo = Object.keys(model.configInfo).some((key) => key !== "params")
+            sceneObject.configInfo = Object.keys(model.configInfo).some(
+                (key) => key !== "params" && key !== "materials"
+            )
                 ? model.configInfo
                 : null;
 
