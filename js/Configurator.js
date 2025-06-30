@@ -23,7 +23,7 @@ class Configurator {
         this.newMeshHash = "";
         this.newMeshId = "";
         this.newModelId = "";
-        this.isPlanner = false;
+        this.isPlanner = true;
         this.queue = {};
         this.sceneObject = null;
         this.initMaterials = [];

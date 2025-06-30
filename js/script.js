@@ -31,7 +31,7 @@ function getRandomInt(max) {
 }
 
 const script = document.createElement("script");
-script.src = `${R2D.URL.DOMAIN}/src_designer/js/three.min.js?v=${getRandomInt(100)}`;
+script.src = `${R2D.URL.DOMAIN}/src_designer/js/three.min.js?v=${appVersion || getRandomInt(100)}`;
 document.body.appendChild(script);
 script.onload = onTHREELoaded;
 
@@ -39,7 +39,7 @@ const hideImg = document.querySelector("#hideImg");
 
 function onTHREELoaded() {
     const script = document.createElement("script");
-    script.src = `${R2D.URL.DOMAIN}/src_designer/js/tris.js?v=${getRandomInt(100)}`;
+    script.src = `${R2D.URL.DOMAIN}/src_designer/js/tris.js?v=${appVersion || getRandomInt(100)}`;
     document.body.appendChild(script);
     script.onload = onThrisLoaded;
 }
@@ -47,7 +47,7 @@ function onTHREELoaded() {
 function onThrisLoaded() {
     const script = document.createElement("script");
     // script.src = "http://localhost:9000/src_designer/js/plannercore.js?v=10"; //для локальної розробки
-    script.src = `${R2D.URL.DOMAIN}/src_designer/js/plannercore.js?v=${getRandomInt(100)}`;
+    script.src = `${R2D.URL.DOMAIN}/src_designer/js/plannercore.js?v=${appVersion || getRandomInt(100)}`;
     document.body.appendChild(script);
     script.onload = onPlannercoreLoaded;
 }
