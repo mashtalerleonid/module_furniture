@@ -23,6 +23,19 @@
         <div class="right-panel__container">
             <div class="rp__nav">
                 <div class="nav__wrapper">
+                    <button class="nav__btn_close" id="closeBtn">
+                        <svg
+                            class="nav__icon-arrow"
+                            width="13"
+                            height="15"
+                            viewBox="0 0 13 15"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <path
+                                d="M7.71246 0L8.41032 0.679673L1.94819 7H13V8H1.87968L8.4375 14.3151L7.74508 15L0.702613 8.21825L0.697857 8.2229L0 7.54323L7.71246 0Z"
+                            />
+                        </svg>
+                    </button>
                     <button class="nav__btn hidden">
                         <svg
                             class="nav__icon-arrow"
@@ -305,28 +318,8 @@
                     ></path>
                 </svg>
             </div>
-            <div class="planner-btns__container hidden">
-                <div class="planner-btn" id="closeBtn">
-                    <svg
-                        class="planner-btn__icon"
-                        width="22"
-                        height="21"
-                        viewBox="0 0 22 21"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <path
-                            d="M20.299 0.100586L21.0061 0.807693L1.20711 20.6067L0.5 19.8996L20.299 0.100586Z"
-                            fill="black"
-                        />
-                        <path
-                            d="M1.29911 0.100586L0.592005 0.807693L20.391 20.6067L21.0981 19.8996L1.29911 0.100586Z"
-                            fill="black"
-                        />
-                    </svg>
-                    <div class="planner-btn__text">CLOSE</div>
-                </div>
-                <!-- <div class="planner-btn planner-btn--apply" id="applyBtn">
+            <!-- <div class="planner-btns__container hidden">
+                <div class="planner-btn planner-btn--apply" id="applyBtn">
                     <svg
                         class="planner-btn__icon"
                         width="23"
@@ -338,13 +331,15 @@
                         <path d="M1 10L8 17L22 1" stroke="#2B2B2B" />
                     </svg>
                     <div class="planner-btn__text">APPLY</div>
-                </div> -->
-            </div>
+                </div>
+            </div> -->
         </div>
 
         <div class="hidden">
             <img id="hideImg" src="./images/hide.png" alt="" srcset="" />
         </div>
+
+        <div class="product_hover" id="product_hover" style="display: none"></div>
 
         <!-- Треба для локального завантаження архіву -->
         <!-- <script>
@@ -366,7 +361,7 @@
                 URL_UPLOAD_FILE: "/api/entities/upload",
                 URL_UPLOAD_ENTITY: "/api/entities",
                 URL_CONFIG_APPS: "/api/entities/apps",
-                URL_CATALOG_SEARCH: '/api/catalog/search?key=4500282e6846fe6650de81bd35d27540',
+                URL_CATALOG_SEARCH: "/api/catalog/search?key=4500282e6846fe6650de81bd35d27540",
             };
             let appVersion = "";
         </script> -->

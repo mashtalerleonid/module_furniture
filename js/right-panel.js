@@ -17,10 +17,10 @@ colorpickerEl.id = "colorpicker";
 colorpickerEl.value = "#ff0000";
 colorpickerEl.classList.add("colorpicker");
 
-const plannerBtnsContainer = document.querySelector(".planner-btns__container");
 const closeBtn = document.querySelector("#closeBtn");
 // const applyBtn = document.querySelector("#applyBtn");
 const copyBtn = document.querySelector("#copyBtn");
+const productHover = document.querySelector("#product_hover");
 
 let materialsListEl = document.createElement("div");
 
@@ -72,12 +72,16 @@ window.addEventListener("message", (e) => {
 function setSubpropItemsListeners() {
     document.querySelectorAll(".subprop__item").forEach((item) => {
         item.addEventListener("click", onSubpropItemClick);
+        item.addEventListener("mouseover", onProductHoverShow);
+        item.addEventListener("mouseout", onProductHoverHide);
     });
 }
 
 function removeSubpropItemsListeners() {
     document.querySelectorAll(".subprop__item").forEach((item) => {
         item.removeEventListener("click", onSubpropItemClick);
+        item.removeEventListener("mouseover", onProductHoverShow);
+        item.removeEventListener("mouseout", onProductHoverHide);
     });
 }
 
@@ -85,6 +89,8 @@ function setCurMaterialsListener() {
     document.querySelector(".materials__list").addEventListener("click", onCurMaterialClick);
     document.querySelectorAll(".cur-material").forEach((matDom) => {
         matDom.addEventListener("mouseenter", onCurMaterialMouseEnter);
+        matDom.addEventListener("mouseover", onProductHoverShow);
+        matDom.addEventListener("mouseout", onProductHoverHide);
     });
     document.querySelectorAll(".cur-material").forEach((matDom) => {
         matDom.addEventListener("mouseleave", onCurMaterialMouseLeave);
@@ -95,6 +101,8 @@ function removeCurMaterialsListener() {
     document.querySelector(".materials__list").removeEventListener("click", onCurMaterialClick);
     document.querySelectorAll(".cur-material").forEach((matDom) => {
         matDom.removeEventListener("mouseenter", onCurMaterialMouseEnter);
+        matDom.removeEventListener("mouseover", onProductHoverShow);
+        matDom.removeEventListener("mouseout", onProductHoverHide);
     });
     document.querySelectorAll(".cur-material").forEach((matDom) => {
         matDom.removeEventListener("mouseleave", onCurMaterialMouseLeave);
@@ -151,9 +159,9 @@ async function updateCurMaterialsMarkupListener() {
     modelMatData = await configurator.getMatDataForMarkup();
     const curMaterialsListMarkup = modelMatData
         .map(
-            ({ prevSrc, index, hash }) =>
-                `<div class="cur-material">
-                    <img src=${prevSrc} alt="" data-index=${index} data-hash=${hash} />
+            ({ prevSrc, index, hash, name, id }) =>
+                `<div class="cur-material" data-title=${name} data-id=${id}>
+                    <img src=${prevSrc} alt="" data-index=${index} data-hash=${hash}/>
                 </div>`
         )
         .join("");
@@ -186,7 +194,43 @@ function onSubpropItemClick(e) {
     }
 }
 
+function onProductHoverShow(e) {
+    let productTitle = e.currentTarget.getAttribute("data-title");
+    let productText = e.currentTarget.getAttribute("data-text");
+    const productRect = e.currentTarget.getBoundingClientRect();
+    const productTop = productRect.top + window.scrollY;
+    const productLeft = productRect.left + window.scrollX;
+    const productHeight = e.currentTarget.offsetHeight;
+
+    productHover.style.top = `${productTop + productHeight / 2}px`;
+    productHover.style.left = `${productLeft - 10}px`; // +10px відступ праворуч
+    if (productTitle) {
+        const titleEl = document.createElement("div");
+        titleEl.className = "subprop__item__title";
+        titleEl.textContent = productTitle;
+        productHover.append(titleEl);
+    }
+
+    if (productText) {
+        const textEl = document.createElement("div");
+        textEl.className = "subprop__item__text";
+        textEl.textContent = productText;
+        productHover.append(textEl);
+    }
+    /*  productHover.innerHTML = `
+        <div class="subprop__item__title">${productTitle}</div>
+        <div class="subprop__item__text">${productText}</div>
+    `;*/
+    productHover.style.display = "block";
+}
+
+function onProductHoverHide(e) {
+    productHover.style.display = "none";
+    productHover.innerHTML = "";
+}
+
 async function onCurMaterialClick(e) {
+    let curMatId = e.target.closest(".cur-material")?.getAttribute("data-id");
     const getMeshMatDataByHash = (hash) => modelMatData.find((el) => el.hash === hash);
     // --------------------
     selectedHash = e.target.dataset.hash;
@@ -209,7 +253,7 @@ async function onCurMaterialClick(e) {
             const urlList = getMeshMatDataByHash(selectedHash).urlList;
             const data = await fetchByUrlList(urlList);
             if (data.products) {
-                renderMaterials(data.products, name);
+                renderMaterials(data.products, name, curMatId);
             } else {
                 setCurMaterialsListener();
             }
@@ -218,11 +262,12 @@ async function onCurMaterialClick(e) {
         const setId = getMeshMatDataByHash(selectedHash).setId;
         const data = await fetchBySet(setId);
         if (data.products) {
-            renderMaterials(data.products, data.data.name);
+            renderMaterials(data.products, data.data.name, curMatId);
         } else {
             setCurMaterialsListener();
         }
     }
+    onProductHoverHide();
 }
 
 function onCurMaterialMouseEnter(e) {
@@ -241,7 +286,10 @@ function onCurMaterialMouseLeave() {
 function onMaterialClick(e) {
     const productId = e.target.dataset.id;
     if (!productId) return;
+    const allParents = document.querySelectorAll(".product");
+    allParents.forEach((el) => el.classList.remove("product_active"));
 
+    e.target.parentElement.classList.add("product_active");
     configurator.setGroupMaterialAt(selectedHash, productId, "current");
 }
 
@@ -259,8 +307,10 @@ function slide({ elHide, elShow, navTitle = "", side = "to-left", isBackBtn = fa
         navTitleEl.textContent = navTitle;
         if (isBackBtn) {
             navBackBtn.classList.remove("hidden");
+            closeBtn.classList.add("hidden");
         } else {
             navBackBtn.classList.add("hidden");
+            closeBtn.classList.remove("hidden");
         }
 
         elShow.style.left = "0";
@@ -279,7 +329,6 @@ async function renderSettingsContainer(side = "to-left") {
     propListEl.innerHTML = "";
 
     if (configurator.isPlanner) {
-        plannerBtnsContainer.classList.remove("hidden");
     } else {
         copyBtn.classList.remove("hidden");
     }
@@ -306,15 +355,14 @@ async function renderSettingsContainer(side = "to-left") {
     modelMatData = await configurator.getMatDataForMarkup();
     const curMaterialsListMarkup = modelMatData
         .map(
-            ({ prevSrc, index, hash }) =>
-                `<div class="cur-material">
+            ({ prevSrc, index, hash, name, id }) =>
+                `<div class="cur-material" data-title=${name} data-id=${id}>
                     <img src=${prevSrc} alt="" data-index=${index} data-hash=${hash} />
                 </div>`
         )
         .join("");
     curMaterialsListEl.innerHTML = curMaterialsListMarkup;
     settingsContainerEl.append(curMaterialsListEl);
-
     dynamicContainerEl.append(settingsContainerEl);
 
     setSubpropItemsListeners();
@@ -338,13 +386,6 @@ async function renderSettingsContainer(side = "to-left") {
         const propItemEl = document.createElement("div");
         propItemEl.classList.add("prop__item");
 
-        if (configurator.configType === "meshReplace") {
-            const propItemTitleEl = document.createElement("div");
-            propItemTitleEl.classList.add("subprop__tltle");
-            propItemTitleEl.textContent = data.title;
-            propItemEl.append(propItemTitleEl);
-        }
-
         const subpropListEl = getSubpropListEl(data, hash);
         propItemEl.append(subpropListEl);
 
@@ -361,21 +402,19 @@ async function renderSettingsContainer(side = "to-left") {
                 const modelName = configurator.PH.getModelName(itemData.id);
 
                 return src
-                    ? `<div class="subprop__item" data-id="${itemData.id}" data-hash="${hash}">
+                    ? `<div class="subprop__item" data-id="${
+                          itemData.id
+                      }" data-hash="${hash}" data-title="${
+                          itemData.title || modelName || ""
+                      }" data-text="${itemData.text}">
                         <div class="subprop__item__thumb">
                             <img src=${src} alt="" />
-                        </div>
-                        <div class="subprop__item__descr">
-                            <div class="subprop__item__title">
-                                ${itemData.title || modelName || ""}
-                            </div>
-                            <div class="subprop__item__text">${itemData.text}</div>
                         </div>
                     </div>`
                     : `<div class="subprop__item" data-id="${itemData.id}" data-hash="${hash}">
                         <div class="subprop__item__descr">
                             <div class="subprop__item__title">
-                                ${itemData.title  || modelName || ""}
+                                ${itemData.title || modelName || ""}
                             </div>
                             <div class="subprop__item__text">${itemData.text}</div>
                         </div>
@@ -392,14 +431,14 @@ async function renderSettingsContainer(side = "to-left") {
     }
 }
 
-function renderMaterials(products, prevName) {
+function renderMaterials(products, prevName, curMatId) {
     const productsMarkup = products
-        .map(
-            ({ id, source }) =>
-                `<div class="product">
+        .map(({ id, source }) => {
+            const isActive = id == curMatId ? "product_active" : "";
+            return `<div class="product ${isActive}">
                     <img src=${R2D.URL.DOMAIN + source.images.preview} data-id="${id}" alt="" /> 
-                </div>`
-        )
+                </div>`;
+        })
         .join("");
 
     materialsListEl.innerHTML = "";
