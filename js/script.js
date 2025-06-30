@@ -76,8 +76,55 @@ function onPlannercoreLoaded() {
 // для локальної розробки розкоментувати
 // let configInfo = null;
 // let isLocalHost = true;
-// let modelId = "34648";
-// let models = [{ modelId, configInfo: { params: {} } }];
+// let modelId = "34627";
+// const materials = [
+//     {
+//         name: "mesh_1_base",
+//         hash: "c487bcd3ae65846915439dc8d67c3938",
+//         default: 2594,
+//         current: 2594,
+//         source: "bank",
+//     },
+//     {
+//         name: "mesh_0_top",
+//         hash: "d8fe9d6adbd017b2dda599eefd1976f1",
+//         default: "#b77606",
+//         current: "#b77606",
+//         source: "bank",
+//         addMaterial: 32741,
+//     },
+//     {
+//         name: "mesh_2_doors",
+//         hash: "48c58ca1fed8e743bebba1f73adbb954",
+//         default: 536,
+//         current: 536,
+//         source: "bank",
+//     },
+//     {
+//         name: "mesh_4_legs",
+//         hash: "d833cf261812ea540dbd5481cfd73820",
+//         default: 769,
+//         current: 769,
+//         source: "bank",
+//     },
+//     {
+//         name: "mesh_3_h_1_1",
+//         hash: "35f8197c661388c97dab99b130db78ed",
+//         default: 2411,
+//         current: 2411,
+//         source: "none",
+//     },
+//     {
+//         name: "mesh_3_h_1_1001",
+//         hash: "bd8e5aaa84304c258331b98cd99fbc2b",
+//         default: 2411,
+//         current: 2411,
+//         source: "none",
+//     },
+// ];
+
+// let models = [{ modelId, configInfo: { params: {}, materials } }];
+
 // if (isLocalHost) {
 //     window.addEventListener("message", (e) => {
 //         if (!e.data || typeof e.data !== "string" || e.data.startsWith("/*framebus*/")) return;
