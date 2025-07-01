@@ -337,7 +337,8 @@ class Configurator {
                     hash: data.hash,
                     isColorpicker: "0",
                     urlList: curNodes.urlList || "",
-                    name: curNodes.name || "",
+                    categoryName: curNodes.name || "",
+                    name: productData.name || "",
                 });
             }
         }
