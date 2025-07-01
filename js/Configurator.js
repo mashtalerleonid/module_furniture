@@ -369,43 +369,29 @@ class Configurator {
         wrapSVG.classList.add("lockDisabled");
     }
 
-    async createMapTagToId() {
-        if (this.mapTagToProductIds) return;
+    async loadReplaceProductData() {
+        const idsArr = [];
 
-        const tagsArr = [];
         this.configData.model.modelsForReplace.forEach((model) => {
-            if (model.tag != "0" && !tagsArr.includes(model.tag)) {
-                tagsArr.push(model.tag);
+            if (model.id != "0" && !idsArr.includes(model.id)) {
+                idsArr.push(model.id);
             }
         });
+
         this.configData.geometries.forEach((data) => {
             if (data.modelsForReplace) {
                 data.modelsForReplace.forEach((model) => {
-                    if (model.tag != "0" && !tagsArr.includes(model.tag)) {
-                        tagsArr.push(model.tag);
+                    if (model.id != "0" && !idsArr.includes(model.id)) {
+                        idsArr.push(model.id);
                     }
                 });
-                if (!tagsArr.includes(data.defaultTag)) {
-                    tagsArr.push(data.defaultTag);
+                if (!idsArr.includes(data.defaultId)) {
+                    idsArr.push(data.defaultId);
                 }
             }
         });
-        this.mapTagToProductIds = await R2D.Pool.loadProductDataByTagsArr(tagsArr);
-    }
 
-    addProductIds() {
-        this.configData.model.modelsForReplace.forEach((model) => {
-            model.id = this.mapTagToProductIds[model.tag][0];
-        });
-
-        this.configData.geometries.forEach((data) => {
-            if (data.modelsForReplace) {
-                data.defaultId = this.mapTagToProductIds[data.defaultTag][0];
-                data.modelsForReplace.forEach((model) => {
-                    model.id = model.tag == "0" ? "0" : this.mapTagToProductIds[model.tag][0];
-                });
-            }
-        });
+        await this.PH.loadProductsData(idsArr);
     }
 
     async startConfigurate(modelId) {
@@ -421,9 +407,7 @@ class Configurator {
 
             this.updateDimLimits();
 
-            await this.createMapTagToId();
-
-            this.addProductIds();
+            await this.loadReplaceProductData();
 
             this.initMaterials = this.sceneObject.getMaterialsObjects().map((mo) => ({ ...mo }));
             this.configType = this.findConfigType();

@@ -111,10 +111,18 @@ function removeCurMaterialsListener() {
 
 function setMaterialsListener() {
     document.querySelector(".products__list").addEventListener("click", onMaterialClick);
+    document.querySelectorAll(".product").forEach((matDom) => {
+        matDom.addEventListener("mouseover", onProductHoverShow);
+        matDom.addEventListener("mouseout", onProductHoverHide);
+    });
 }
 
 function removeMaterialsListener() {
     document.querySelector(".products__list")?.removeEventListener("click", onMaterialClick);
+    document.querySelectorAll(".product").forEach((matDom) => {
+        matDom.removeEventListener("mouseover", onProductHoverShow);
+        matDom.removeEventListener("mouseout", onProductHoverHide);
+    });
 }
 
 // ---- FETCH ----
@@ -196,14 +204,26 @@ function onSubpropItemClick(e) {
 
 function onProductHoverShow(e) {
     let productTitle = e.currentTarget.getAttribute("data-title");
+    //let productTitle = 'Тут назва якась назва ручки бла бла';
+    let productIndex = Array.from(e.currentTarget.parentNode.children).indexOf(e.currentTarget) + 1;
     let productText = e.currentTarget.getAttribute("data-text");
     const productRect = e.currentTarget.getBoundingClientRect();
     const productTop = productRect.top + window.scrollY;
     const productLeft = productRect.left + window.scrollX;
-    const productHeight = e.currentTarget.offsetHeight;
+    const productWidth = e.currentTarget.offsetWidth;
+    const productHoverWidth = productHover.offsetWidth;
 
-    productHover.style.top = `${productTop + productHeight / 2}px`;
-    productHover.style.left = `${productLeft - 10}px`; // +10px відступ праворуч
+    if (productIndex % 2 === 0) {
+        productHover.classList.add('product_hover_left');
+        productHover.style.top = `${productTop}px`;
+        productHover.style.left = `${productLeft + productWidth + productHoverWidth + 10}px`;
+    } else {
+        productHover.classList.remove('product_hover_left');
+        productHover.style.top = `${productTop}px`;
+        productHover.style.left = `${productLeft - 10}px`;
+    }
+
+
     if (productTitle) {
         const titleEl = document.createElement("div");
         titleEl.className = "subprop__item__title";
@@ -221,7 +241,10 @@ function onProductHoverShow(e) {
         <div class="subprop__item__title">${productTitle}</div>
         <div class="subprop__item__text">${productText}</div>
     `;*/
-    productHover.style.display = "block";
+
+
+
+    productTitle || productText ? productHover.style.display = "block" : null;
 }
 
 function onProductHoverHide(e) {
@@ -305,6 +328,7 @@ function slide({ elHide, elShow, navTitle = "", side = "to-left", isBackBtn = fa
 
     setTimeout(() => {
         navTitleEl.textContent = navTitle;
+        //navTitleEl.textContent = 'тут невьєбенна довга назва, яку я має врахувати при версці не то отримаю люлєй';
         if (isBackBtn) {
             navBackBtn.classList.remove("hidden");
             closeBtn.classList.add("hidden");
@@ -433,14 +457,13 @@ async function renderSettingsContainer(side = "to-left") {
 
 function renderMaterials(products, prevName, curMatId) {
     const productsMarkup = products
-        .map(({ id, source }) => {
+        .map(({ id, source, name }) => {
             const isActive = id == curMatId ? "product_active" : "";
-            return `<div class="product ${isActive}">
+            return `<div class="product ${isActive}" data-title="${name}">
                     <img src=${R2D.URL.DOMAIN + source.images.preview} data-id="${id}" alt="" /> 
                 </div>`;
         })
         .join("");
-
     materialsListEl.innerHTML = "";
     materialsListEl.classList.add("products__list");
     materialsListEl.insertAdjacentHTML("beforeend", productsMarkup);

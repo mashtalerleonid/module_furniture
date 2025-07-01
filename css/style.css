@@ -110,6 +110,11 @@ img {
 
 .nav__title {
     font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: calc(100% - 40px);
+    padding-right: 10px;
 }
 
 .dynamic__container {
@@ -202,11 +207,11 @@ img {
 }
 
 .subprop__item__title {
-    font-size: 16px;
+    font-size: 12px;
 }
 
 .subprop__item__text {
-    font-size: 12px;
+    font-size: 10px;
     margin-top: 5px;
     color: var(--grey-dark-color);
 }
@@ -218,13 +223,16 @@ img {
     z-index: 999;
     background: #fff;
     pointer-events: none;
-    transform: translate(-100%, -50%);
+    transform: translate(0, -100%);
+    max-width: 265px;
+    min-width: 150px;
+    text-align: center;
     &::after {
         content: "";
         position: absolute;
-        left: 100%;
-        top: 50%;
-        transform: translate(calc(-50% + 1px), -50%) rotate(-45deg);
+        left: 10px;
+        top: 100%;
+        transform: translate(0px, -40%) rotate(45deg);
         width: 10px;
         height: 10px;
         background: #fff;
@@ -232,29 +240,44 @@ img {
         border-bottom: 1px solid #000;
     }
 }
+.product_hover_left{
+    transform: translate(-100%, -100%);
+    &::after {
+       left: auto;
+        right: 10px;
+    }
+}
+
 /* ---------- */
 
 .products__list {
     position: absolute;
-    width: 100%;
-    display: grid;
-    padding: 15px;
-    grid-gap: 19px;
-    grid-template-columns: repeat(4, calc(25% - 15px));
+    padding: 10px;
     overflow-y: auto;
     height: 100%;
     transition: all ease-in-out 200ms;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    width: 100%;
+    align-content: baseline;
 }
 
 .product {
-    height: 46px;
-    width: 46px;
+    width: 108px;
+    height: 108px;
     display: flex;
+    position: relative;
+    margin-top: 10px;
+    transition: all 0.5s ease;
+    align-items: center;
+    user-select: none;
+    background-size: cover;
     justify-content: center;
-    cursor: pointer;
+    background-position: center;
     border: 1px solid #969696;
     box-shadow: 1px 1px 2px 1px rgba(0, 0, 0, 0.11);
-    transition: all 0.9s cubic-bezier(0.19, 1, 0.22, 1);
+    cursor: pointer;
 }
 
 .product:hover {
