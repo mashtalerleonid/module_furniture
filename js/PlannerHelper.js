@@ -188,11 +188,11 @@ class PlannerHelper {
         const url = `${R2D.URL.DOMAIN}${R2D.URL.URL_CATALOG_SEARCH}&ids=${ids.join(",")}`;
         const response = await fetch(url, {
             method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                "x-token": R2D.token || "",
-                "x-lang": R2D.language || "",
-            },
+            // headers: {
+            //     "Content-Type": "application/json",
+            //     "x-token": R2D.token || "",
+            //     "x-lang": R2D.language || "",
+            // },
             credentials: "include",
             mode: "cors",
         });
@@ -217,11 +217,11 @@ class PlannerHelper {
 
         const response = await fetch(url, {
             method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                "x-token": R2D.token || "",
-                "x-lang": R2D.language || "",
-            },
+            // headers: {
+            //     "Content-Type": "application/json",
+            //     "x-token": R2D.token || "",
+            //     "x-lang": R2D.language || "",
+            // },
             credentials: "include",
             mode: "cors",
         });
