@@ -29,7 +29,6 @@ class Configurator {
         this.initMaterials = [];
         this.objectViewer3D = null;
         this.protector = 0;
-        this.mapTagToProductIds = null;
 
         this.sceneObjects = [];
         this.groupMeshesDataMap = new Map();
@@ -1165,7 +1164,7 @@ class Configurator {
         }
     }
 
-    forReplace3DGroupLoaded(e) {
+    async forReplace3DGroupLoaded(e) {
         R2D.Pool3D.removeEventListener(Event.FINISH, this.forReplace3DGroupLoadedListener);
         this.groupConfigInfo = [];
         const defaultId = this.getDefaultMatIdByHash(this.newMeshHash);
@@ -1198,12 +1197,28 @@ class Configurator {
         this.restoreSceneObjectForMarkup();
 
         this.insertGroupToPlanner();
+
+        // -----
+
+        const newMeshProductData = await this.PH.getProductData(this.newMeshId);
+        const newMatId = newMeshProductData.source.body.materials[0].default;
+        const curMatId = this.getCurrentMatIdByHash(this.newMeshHash);
+
+        if (newMatId !== curMatId) {
+            this.setGroupMaterialAt(this.newMeshHash, newMatId, "current");
+        }
     }
 
     getDefaultMatIdByHash(hash) {
         const materials = this.sceneObject.getMaterialsObjects();
         const material = materials.find((mo) => mo.hash === hash);
         return material?.default || 0;
+    }
+
+    getCurrentMatIdByHash(hash) {
+        const materials = this.sceneObject.getMaterialsObjects();
+        const material = materials.find((mo) => mo.hash === hash);
+        return material?.current || 0;
     }
 
     setSceneObjectAsCurrent(sceneObject) {

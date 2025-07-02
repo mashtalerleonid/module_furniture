@@ -185,6 +185,8 @@ class PlannerHelper {
     //
 
     async loadProductsData(ids) {
+        if (!ids.length) return [];
+
         const url = `${R2D.URL.DOMAIN}${R2D.URL.URL_CATALOG_SEARCH}&ids=${ids.join(",")}`;
         const response = await fetch(url, {
             method: "GET",

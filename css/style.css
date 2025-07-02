@@ -151,7 +151,7 @@ img {
 
 .prop__list {
     padding: 10px;
-    border-bottom: 1px solid var(--grey-transparent-color);
+    /* border-bottom: 1px solid var(--grey-transparent-color); */
 }
 
 .prop__item {
