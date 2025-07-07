@@ -953,7 +953,7 @@ class Configurator {
 
         if (this.configType === "modelReplace") {
             configInfo.modelData = {
-                curId: this.modelData.curId,
+                curId: "" + this.modelData.curId,
             };
         }
         if (this.configType === "meshReplace") {
@@ -984,7 +984,7 @@ class Configurator {
                         configInfo.meshesData[hash].possibleIds = [curId];
                     } else {
                         configInfo.meshesData[hash].possibleIds = modelsForReplace
-                            .map((data) => data.id)
+                            .map((data) => "" + data.id)
                             .filter((id) => id != 0);
                     }
 
@@ -1204,7 +1204,7 @@ class Configurator {
         const newMatId = newMeshProductData.source.body.materials[0].default;
         const curMatId = this.getCurrentMatIdByHash(this.newMeshHash);
 
-        if (newMatId !== curMatId) {
+        if (newMatId != curMatId) {
             this.setGroupMaterialAt(this.newMeshHash, newMatId, "current");
         }
     }
