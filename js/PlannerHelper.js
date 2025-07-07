@@ -238,6 +238,7 @@ class PlannerHelper {
 
     async getConfigData(modelId) {
         const objectData = await this.getProductData(modelId);
+        if (!objectData.metadata) return null;
 
         const metadata =
             objectData.metadata[this.configId]?.data || objectData.metadata.commonapp?.data;
